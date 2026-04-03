@@ -1,0 +1,18 @@
+{
+  "branch": "main",
+  "depends_recipe": "",
+  "description_control": "rss viewer for the enigma2 gui",
+  "description_recipe": "rss viewer for the enigma2 gui",
+  "history_source_dir": "simplerss",
+  "internal_package_name": "enigma2-plugin-extensions-simplerss",
+  "module_dir_name": "SimpleRSS",
+  "output_subdir": "simplerss",
+  "package_name": "enigma2-plugin-extensions-simplerss",
+  "plugin_src_rel": "simplerss",
+  "python_package": "SimpleRSS",
+  "rdepends_recipe": "",
+  "replaces": "",
+  "repo_name": "simplerss",
+  "rrecommends": "",
+  "rreplaces": ""
+}
