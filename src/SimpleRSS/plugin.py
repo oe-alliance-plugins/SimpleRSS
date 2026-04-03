@@ -45,7 +45,7 @@ MODULE_NAME = __name__.split(".")[-2]
 try:
 	from Plugins.Extensions.PicturePlayer import ui
 	PICTUREPLAYER = True
-except ImportError as err:
+except ImportError:
 	PICTUREPLAYER = False
 	print(f"[{MODULE_NAME}] Import WARNING: Plugin 'PicturePlayer' was not found.")
 
@@ -396,12 +396,12 @@ class RSS_Setup(ConfigListScreen, Screen):  # Setup for SimpleRSS, quick-edit fo
 			self.session.open(MessageBox, _("File '%s' was not found, import was aborted!") % feedfile, type=MessageBox.TYPE_ERROR, timeout=5)
 
 	def addEntry(self):  # create entry
-		l = config.plugins.simpleRSS.feed
+		feed = config.plugins.simpleRSS.feed
 		s = ConfigSubsection()
 		s.uri = ConfigText(default="http://", fixed_size=False)
 		s.autoupdate = ConfigEnableDisable(default=True)
-		ident = len(l)
-		l.append(s)
+		ident = len(feed)
+		feed.append(s)
 		return ident
 
 	def new(self):
@@ -1174,8 +1174,12 @@ class RSSPoller:  # Keeps all Feed and takes care of (automatic) updates
 				if hasattr(Notifications.notifications, 'Notifications.notificationQueue'):
 					Xnotifications = Notifications.notificationQueue.queue
 					Xcurrent_notifications = Notifications.notificationQueue.current
-					handler = lambda note: (note.fnc, note.screen, note.args, note.kwargs, note.id)
-					handler_current = lambda note: (note[0].id,)
+
+					def handler(note):
+						return (note.fnc, note.screen, note.args, note.kwargs, note.id)
+
+					def handler_current(note):
+						return (note[0].id,)
 				else:
 					Xnotifications = Notifications.notifications
 					Xcurrent_notifications = Notifications.current_notifications
