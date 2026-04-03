@@ -1,35 +1,35 @@
 
 
-# <p align="center">simplerss Plugin for Enigma2 (E²) ![GitHub repo size](https://img.shields.io/github/repo-size/oe-alliance-plugins/simplerss.svg)</p>
+# <p align="center">SimpleRSS Plugin for Enigma2 (E²) ![GitHub repo size](https://img.shields.io/github/repo-size/oe-alliance-plugins/SimpleRSS.svg)</p>
 
 **rss viewer for the enigma2 gui**
 
 
 ## Github status
-[![Build](https://github.com/oe-alliance-plugins/simplerss/actions/workflows/buildbot.yml/badge.svg)](https://github.com/oe-alliance-plugins/simplerss/actions/workflows/buildbot.yml)
-[![Lint Status](https://github.com/oe-alliance-plugins/simplerss/actions/workflows/pylint.yml/badge.svg)](https://github.com/oe-alliance-plugins/simplerss/actions/workflows/pylint.yml)
-[![Ruff Status](https://github.com/oe-alliance-plugins/simplerss/actions/workflows/ruff.yml/badge.svg)](https://github.com/oe-alliance-plugins/simplerss/actions/workflows/ruff.yml)
-[![Build Status](https://github.com/oe-alliance-plugins/simplerss/actions/workflows/compile.yml/badge.svg)](https://github.com/oe-alliance-plugins/simplerss/actions/workflows/compile.yml)
-[![AUTOTAG](https://github.com/oe-alliance-plugins/simplerss/actions/workflows/autotag.yml/badge.svg)](https://github.com/oe-alliance-plugins/simplerss/actions/workflows/autotag.yml)
+[![Build](https://github.com/oe-alliance-plugins/SimpleRSS/actions/workflows/buildbot.yml/badge.svg)](https://github.com/oe-alliance-plugins/SimpleRSS/actions/workflows/buildbot.yml)
+[![Lint Status](https://github.com/oe-alliance-plugins/SimpleRSS/actions/workflows/pylint.yml/badge.svg)](https://github.com/oe-alliance-plugins/SimpleRSS/actions/workflows/pylint.yml)
+[![Ruff Status](https://github.com/oe-alliance-plugins/SimpleRSS/actions/workflows/ruff.yml/badge.svg)](https://github.com/oe-alliance-plugins/SimpleRSS/actions/workflows/ruff.yml)
+[![Build Status](https://github.com/oe-alliance-plugins/SimpleRSS/actions/workflows/compile.yml/badge.svg)](https://github.com/oe-alliance-plugins/SimpleRSS/actions/workflows/compile.yml)
+[![AUTOTAG](https://github.com/oe-alliance-plugins/SimpleRSS/actions/workflows/autotag.yml/badge.svg)](https://github.com/oe-alliance-plugins/SimpleRSS/actions/workflows/autotag.yml)
 
 
-[![Plugin Version](https://img.shields.io/github/v/tag/oe-alliance-plugins/simplerss?label=Latest%20Version&color=darkviolet)](https://github.com/oe-alliance-plugins/simplerss/tags)
-[![Latest Release](https://img.shields.io/github/release-date/oe-alliance-plugins/simplerss?label=From&color=darkviolet)](https://github.com/oe-alliance-plugins/simplerss/releases/latest)
-[![Github last commit](https://img.shields.io/github/last-commit/oe-alliance-plugins/simplerss)](https://github.com/oe-alliance-plugins/simplerss)
-[![GitHub Activity](https://img.shields.io/github/commit-activity/y/oe-alliance-plugins/simplerss.svg?label=commits)](https://github.com/oe-alliance-plugins/simplerss/commits)
-[![GitHub Activity](https://img.shields.io/github/commit-activity/m/oe-alliance-plugins/simplerss.svg?label=commits)](https://github.com/oe-alliance-plugins/simplerss/commits)
+[![Plugin Version](https://img.shields.io/github/v/tag/oe-alliance-plugins/SimpleRSS?label=Latest%20Version&color=darkviolet)](https://github.com/oe-alliance-plugins/SimpleRSS/tags)
+[![Latest Release](https://img.shields.io/github/release-date/oe-alliance-plugins/SimpleRSS?label=From&color=darkviolet)](https://github.com/oe-alliance-plugins/SimpleRSS/releases/latest)
+[![Github last commit](https://img.shields.io/github/last-commit/oe-alliance-plugins/SimpleRSS)](https://github.com/oe-alliance-plugins/SimpleRSS)
+[![GitHub Activity](https://img.shields.io/github/commit-activity/y/oe-alliance-plugins/SimpleRSS.svg?label=commits)](https://github.com/oe-alliance-plugins/SimpleRSS/commits)
+[![GitHub Activity](https://img.shields.io/github/commit-activity/m/oe-alliance-plugins/SimpleRSS.svg?label=commits)](https://github.com/oe-alliance-plugins/SimpleRSS/commits)
 
 ## SonarCloud status
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=oe-alliance-plugins_simplerss&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=oe-alliance-plugins_simplerss)
-[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=oe-alliance-plugins_simplerss&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=oe-alliance-plugins_simplerss)
-[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=oe-alliance-plugins_simplerss&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=oe-alliance-plugins_simplerss)
-[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=oe-alliance-plugins_simplerss&metric=bugs)](https://sonarcloud.io/summary/new_code?id=oe-alliance-plugins_simplerss)
-[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=oe-alliance-plugins_simplerss&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=oe-alliance-plugins_simplerss)
-[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=oe-alliance-plugins_simplerss&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=oe-alliance-plugins_simplerss)
-[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=oe-alliance-plugins_simplerss&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=oe-alliance-plugins_simplerss)
-[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=oe-alliance-plugins_simplerss&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=oe-alliance-plugins_simplerss)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=oe-alliance-plugins_SimpleRSS&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=oe-alliance-plugins_SimpleRSS)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=oe-alliance-plugins_SimpleRSS&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=oe-alliance-plugins_SimpleRSS)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=oe-alliance-plugins_SimpleRSS&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=oe-alliance-plugins_SimpleRSS)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=oe-alliance-plugins_SimpleRSS&metric=bugs)](https://sonarcloud.io/summary/new_code?id=oe-alliance-plugins_SimpleRSS)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=oe-alliance-plugins_SimpleRSS&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=oe-alliance-plugins_SimpleRSS)
+[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=oe-alliance-plugins_SimpleRSS&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=oe-alliance-plugins_SimpleRSS)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=oe-alliance-plugins_SimpleRSS&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=oe-alliance-plugins_SimpleRSS)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=oe-alliance-plugins_SimpleRSS&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=oe-alliance-plugins_SimpleRSS)
 
-[![SonarQube Cloud](https://sonarcloud.io/images/project_badges/sonarcloud-light.svg)](https://sonarcloud.io/summary/new_code?id=oe-alliance-plugins_simplerss)
+[![SonarQube Cloud](https://sonarcloud.io/images/project_badges/sonarcloud-light.svg)](https://sonarcloud.io/summary/new_code?id=oe-alliance-plugins_SimpleRSS)
 
 ---
 
@@ -45,7 +45,7 @@ This plugin is released under GPLv3. See [LICENSE](https://www.gnu.org/licenses/
 
 ### 🤝 Contributing & Contact
 
-simplerss is created by users for users and we welcome every contribution. There are no highly paid developers. There are only users who have seen a problem and done their best to fix it. This means simplerss will always need the contributions of users like you. How can you get involved?
+SimpleRSS is created by users for users and we welcome every contribution. There are no highly paid developers. There are only users who have seen a problem and done their best to fix it. This means SimpleRSS will always need the contributions of users like you. How can you get involved?
 
 For questions or feedback, feel free and please open an issue or contribute with a Pull Request!
 
