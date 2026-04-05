@@ -118,7 +118,7 @@ def autostart(reason, **kwargs):  # Autostart
 	global rssPoller, tickerView
 	if "session" in kwargs:
 		if config.plugins.simpleRSS.update_notification.value == "ticker" and tickerView is None:
-			print("[%s] Ticker instantiated on autostart" % MODULE_NAME)
+			print(f"[{MODULE_NAME}] Ticker instantiated on autostart")
 			tickerView = kwargs["session"].instantiateDialog(RSS_TickerView)
 	# Instanciate when enigma2 is launching, autostart active and session present or installed during runtime
 	if reason == 0 and config.plugins.simpleRSS.autostart.value and (not plugins.firstRun or "session" in kwargs):
@@ -138,7 +138,7 @@ def downloadPicfile(url, picfile, resize=None, fixedname=None, callback=None):
 			if fixedname:
 				picfile = fixedname
 		except exceptions.RequestException as err:
-			print("[%s] ERROR in module 'downloadPicfile': troubles accessing URL'%s" % (MODULE_NAME, str(err)))
+			print(f"[{MODULE_NAME}] ERROR in module 'downloadPicfile': troubles accessing URL'{str(err)}'")
 			return
 		if exists(picfile[:picfile.rfind("/")]):
 			with open(picfile, "wb") as f:
@@ -154,7 +154,7 @@ def downloadPicfile(url, picfile, resize=None, fixedname=None, callback=None):
 					img.close()
 				except Exception as err:
 					pngfile = join(TEMPPATH, NOPIC)
-					print("[%s] ERROR in module 'downloadPicfile': unsupported or invalid picture format for '%s': %s" % (MODULE_NAME, str(err), pngfile))
+					print(f"[{MODULE_NAME}] ERROR in module 'downloadPicfile': unsupported or invalid picture format for '{str(err)}': {pngfile}")
 				if isnotpng and exists(picfile):
 					remove(picfile)
 			else:
@@ -162,7 +162,7 @@ def downloadPicfile(url, picfile, resize=None, fixedname=None, callback=None):
 			if callback:
 				callback()
 	else:
-		print("[%s] ERROR in module 'downloadPicfile': missing link or picfile." % MODULE_NAME)
+		print(f"[{MODULE_NAME}] ERROR in module 'downloadPicfile': missing link or picfile.")
 
 
 def url2filename(url, forcepng=False):
@@ -329,7 +329,7 @@ class RSS_Setup(ConfigListScreen, Screen):  # Setup for SimpleRSS, quick-edit fo
 		global tickerView
 		if instance and instance.value == "ticker":
 			if tickerView is None:
-				print("[%s] Ticker instantiated on startup" % MODULE_NAME)
+				print(f"[{MODULE_NAME}] Ticker instantiated on startup")
 				tickerView = self.session.instantiateDialog(RSS_TickerView)
 		else:
 			if tickerView:
@@ -372,11 +372,11 @@ class RSS_Setup(ConfigListScreen, Screen):  # Setup for SimpleRSS, quick-edit fo
 						if child.tag == "feed" and child[1].tag == "url":
 							uri = child[1].text
 							if uri in [x.uri.value for x in config.plugins.simpleRSS.feed]:
-								print("[%s] Found double feed: '%s'" % (MODULE_NAME, uri))
+								print(f"[{MODULE_NAME}] Found double feed: '{uri}'")
 								dupes += 1
 							else:
 								ident = self.addEntry()
-								print("[%s] Feed was imported: '%s'" % (MODULE_NAME, uri))
+								print(f"[{MODULE_NAME}] Feed was imported: '{uri}'")
 								simpleRSS.feed[ident].uri.value = uri
 								simpleRSS.feed[ident].save()
 								simpleRSS.feedcount.value += 1
@@ -385,14 +385,14 @@ class RSS_Setup(ConfigListScreen, Screen):  # Setup for SimpleRSS, quick-edit fo
 					simpleRSS.feedcount.save()
 					simpleRSS.feed.save()
 			except Exception as err:
-				print("[%s] ERROR in module 'importFeedlist' - xml-file was corrupt:\n%s" % (MODULE_NAME, str(err)))
+				print(f"[{MODULE_NAME}] ERROR in module 'importFeedlist' - xml-file was corrupt:\n{str(err)}")
 				self.session.open(MessageBox, _("Xml-file '%s' was corrupt:\n%s" % (feedfile, str(err))), type=MessageBox.TYPE_ERROR, timeout=5)
 				return
-			print("[%s] Importing '%s': %s successfully, %s double" % (MODULE_NAME, feedfile, success, dupes))
+			print(f"[{MODULE_NAME}] Importing '{feedfile}': {success} successfully, {dupes} double")
 			self.session.open(MessageBox, _("Importing '%s'\n%s feeds were imported successfully\n%s feeds were double and not imported") % (feedfile, success, dupes), type=MessageBox.TYPE_INFO, timeout=10)
 			self.elementChanged(None)
 		else:
-			print("[%s] File '%s' was not found, import was aborted!" % (MODULE_NAME, feedfile))
+			print(f"[{MODULE_NAME}] File '{feedfile}' was not found, import was aborted!")
 			self.session.open(MessageBox, _("File '%s' was not found, import was aborted!") % feedfile, type=MessageBox.TYPE_ERROR, timeout=5)
 
 	def addEntry(self):  # create entry
@@ -720,9 +720,9 @@ class RSS_FeedView(RSSBaseView):  # Shows a RSS-Feed
 			self.timer = eTimer()
 			self.timer.callback.append(self.timerTick)
 			self.onExecBegin.append(self.startTimer)
-		linefile = join(PLUGINPATH, "icons/line_%s.png" % RESOLUTION)
+		linefile = join(PLUGINPATH, f"icons/line_{RESOLUTION}.png")
 		self.linepix = LoadPixmap(cached=True, path=linefile if exists(linefile) else join(TEMPPATH, NOPIC))
-		streamfile = join(PLUGINPATH, "icons/streamicon_%s.png" % RESOLUTION)
+		streamfile = join(PLUGINPATH, f"icons/streamicon_{RESOLUTION}.png")
 		self.streampix = LoadPixmap(cached=True, path=streamfile) if exists(streamfile) else None
 		self["content"].onSelectionChanged.append(self.updateInfo)
 		self.onLayoutFinish.append(self.onLayoutFinished)
@@ -767,7 +767,7 @@ class RSS_FeedView(RSSBaseView):  # Shows a RSS-Feed
 		self.rssPoller.removeCallback(self.pollCallback)
 
 	def pollCallback(self, ident=None):
-		print("[%s] SimpleRSSFeed called back" % MODULE_NAME)
+		print(f"[{MODULE_NAME}] SimpleRSSFeed called back")
 		if (ident is None or (isinstance(ident, int) and ident + 1 == self.feed)) and self.feed:
 			self.buildSkinList()
 			self.updateTitle()
@@ -945,7 +945,7 @@ class RSS_Overview(RSSBaseView):  # Shows an Overview over all RSS-Feeds known t
 													"chminus": self.keyPageDown,
 													"chplus": self.keyPageUp
 													}, -1)
-		linefile = join(PLUGINPATH, "icons/line_%s.png" % RESOLUTION)
+		linefile = join(PLUGINPATH, f"icons/line_{RESOLUTION}.png")
 		self.linepix = LoadPixmap(cached=True, path=linefile) if exists(linefile) else None
 		self.onLayoutFinish.append(self.__show)
 		self.onClose.append(self.__close)
@@ -1085,7 +1085,7 @@ class RSSPoller:  # Keeps all Feed and takes care of (automatic) updates
 			callback(id)
 
 	def error(self, error=""):
-		print("[%s] failed to fetch feed: %s" % (MODULE_NAME, str(error)))
+		print(f"[{MODULE_NAME}] failed to fetch feed: {str(error)}")
 		self.next_feed()  # Assume its just a temporary failure and jump over to next feed
 
 	def _gotPage(self, ident=None, callback=False, errorback=None, data=None):
@@ -1121,26 +1121,26 @@ class RSSPoller:  # Keeps all Feed and takes care of (automatic) updates
 					if xmldata:
 						self.gotPage(xmldata)
 					else:
-						print("[%s] ERROR in module 'pollXml': server access failed, no xml-data found." % MODULE_NAME)
+						print(f"[{MODULE_NAME}] ERROR in module 'pollXml': server access failed, no xml-data found.")
 				except Exception as err:
-					print("[%s] ERROR in module 'pollXml': invalid xml data from server. %s" % (MODULE_NAME, str(err)))
+					print(f"[{MODULE_NAME}] ERROR in module 'pollXml': invalid xml data from server. {str(err)}")
 					if errorback:
 						errorback(str(err))
 			except exceptions.RequestException as err:
-				print("[%s] ERROR in module 'pollXml': '%s" % (MODULE_NAME, str(err)))
+				print(f"[{MODULE_NAME}] ERROR in module 'pollXml': '{str(err)}'")
 				if errorback:
 					errorback(str(err))
 		else:
-			print("[%s] ERROR in module 'pollXml': missing link." % MODULE_NAME)
+			print(f"[{MODULE_NAME}] ERROR in module 'pollXml': missing link.")
 
 	def gotPage(self, data, ident=None):
 		feed = fromstring(data.decode())
 		if ident:  # For Single-Polling
 			self.feeds[ident].gotFeed(feed)
-			print("[%s] single feed parsed..." % MODULE_NAME)
+			print(f"[{MODULE_NAME}] single feed parsed...")
 			return
 		new_items = self.feeds[self.current_feed].gotFeed(feed)
-		print("[%s] feed parsed..." % MODULE_NAME)
+		print(f"[{MODULE_NAME}] feed parsed...")
 		if new_items:  # Append new items to locally bound ones
 			self.newItemFeed.history.extend(new_items)
 		self.next_feed()  # Start Timer so we can either fetch next feed or show new_items
@@ -1150,7 +1150,7 @@ class RSSPoller:  # Keeps all Feed and takes care of (automatic) updates
 			print("[%s] timer triggered while reloading, rescheduling" % MODULE_NAME)
 		elif len(self.feeds) <= self.current_feed:  # End of List
 			if self.newItemFeed.history:  # New Items
-				print("[%s] got new items, calling back" % MODULE_NAME)
+				print(f"[{MODULE_NAME}] got new items, calling back")
 				self.doCallback()
 				update_notification_value = config.plugins.simpleRSS.update_notification.value  # Inform User
 				if update_notification_value == "preview":
@@ -1162,9 +1162,9 @@ class RSSPoller:  # Keeps all Feed and takes care of (automatic) updates
 					if tickerView:
 						tickerView.display(self.newItemFeed)
 					else:
-						print("[%s] missing ticker instance, something is wrong with the code" % MODULE_NAME)
+						print(f"[{MODULE_NAME}] missing ticker instance, something is wrong with the code")
 			else:  # No new Items
-				print("[%s] no new items" % MODULE_NAME)
+				print(f"[{MODULE_NAME}] no new items")
 			self.current_feed = 0
 			if self.poll_timer:
 				self.poll_timer.startLongTimer(int(config.plugins.simpleRSS.interval.value) * 60)
@@ -1186,11 +1186,11 @@ class RSSPoller:  # Keeps all Feed and takes care of (automatic) updates
 					handler_current = handler = lambda note: note
 				for x in Xcurrent_notifications:
 					if handler_current(x)[0] == NOTIFICATIONID:
-						print("[%s] timer triggered while preview on screen, rescheduling" % MODULE_NAME)
+						print(f"[{MODULE_NAME}] timer triggered while preview on screen, rescheduling")
 				if clearHistory:
 					for x in Xnotifications:
 						if handler(x)[4] == NOTIFICATIONID:
-							print("[%s] wont wipe history because it was never read" % MODULE_NAME)
+							print(f"[{MODULE_NAME}] wont wipe history because it was never read")
 							clearHistory = False
 							break
 			if clearHistory:
@@ -1241,21 +1241,21 @@ class ElementWrapper:  # based on http://effbot.org/zone/element-rss-wrapper.htm
 	def __getattr__(self, tag):
 		if tag.startswith('__'):
 			raise AttributeError(tag)
-		return self._element.findtext("%s%s" % (self._ns, tag)) if self._element else _("Error when reading the feed. Does your address really refer to an RSS feed?")
+		return self._element.findtext(f"{self._ns}{tag}") if self._element else _("Error when reading the feed. Does your address really refer to an RSS feed?")
 
 
 class RSSEntryWrapper(ElementWrapper):
 	def __getattr__(self, tag):
 		if tag == "media:content":
 			myl = []
-			for elem in self._element.findall("%senclosure" % self._ns):
+			for elem in self._element.findall(f"{self._ns}enclosure"):
 				myl.append((elem.get("url"), elem.get("type"), elem.get("width"), elem.get("height"), elem.get("medium")))
 			return myl
 		elif tag == "enclosures":
 			myl = []
-			for elem in self._element.findall("%senclosure" % self._ns):
+			for elem in self._element.findall(f"{self._ns}enclosure"):
 				myl.append((elem.get("url"), elem.get("type"), elem.get("length")))
-			for elem in self._element.findall("%sdescription" % self._ns):  # alternative #1: search for enclosures
+			for elem in self._element.findall(f"{self._ns}description"):  # alternative #1: search for enclosures
 				if elem.text:
 					res = search(r'src="(.*?)"', elem.text)  # search for 'src=', perhaps not the most elegant way but it works
 					if res:
@@ -1266,13 +1266,13 @@ class RSSEntryWrapper(ElementWrapper):
 						if res:
 							url = res.group(1).replace("http://", "https://")
 							myl.append((url, EXT2MIME.get(cleanupUrl(url[url.rfind("."):]), "unknown"), "0"))
-			for elem in self._element.findall("%simage" % self._ns):  # alternative #3: search for enclosures
+			for elem in self._element.findall(f"{self._ns}image"):  # alternative #3: search for enclosures
 				url = elem.text.replace("http://", "https://")
 				myl.append((url, EXT2MIME.get(cleanupUrl(url[url.rfind("."):]), "unknown"), "0"))  # create missing MIME type
 			return myl
 
 		elif tag == "id":
-			return self._element.findtext("%sguid" % self._ns, "%s%s" % (self.title, self.link))
+			return self._element.findtext(f"{self._ns}guid", f"{self.title}{self.link}")
 		elif tag == "updated":
 			tag = "lastBuildDate"
 		elif tag == "summary":
@@ -1283,20 +1283,20 @@ class RSSEntryWrapper(ElementWrapper):
 class PEAEntryWrapper(ElementWrapper):
 	def __getattr__(self, tag):
 		if tag == "link":
-			for elem in self._element.findall("%s%s" % (self._ns, tag)):
+			for elem in self._element.findall(f"{self._ns}{tag}"):
 				if elem.get("rel") != "enclosure":
 					return elem.get("href")
 			return ''
 		elif tag == "enclosures":
 			myl = []
-			for elem in self._element.findall("%slink" % self._ns):
+			for elem in self._element.findall(f"{self._ns}link"):
 				if elem.get("rel") == "enclosure":
 					myl.append((elem.get("href"), elem.get("type"), elem.get("length")))
 			return myl
 		elif tag == "summary":
-			text = self._element.findtext("%ssummary" % self._ns)
+			text = self._element.findtext(f"{self._ns}summary")
 			if not text:  # if we don't have a summary we use the full content instead
-				elem = self._element.find("%scontent" % self._ns)
+				elem = self._element.find(f"{self._ns}content")
 				if elem is not None and elem.get('type') == "html":
 					text = elem.text
 			return text
@@ -1329,7 +1329,7 @@ class RSSWrapper(ElementWrapper):
 
 class RSS1Wrapper(RSSWrapper):
 	def __init__(self, feed, ns):
-		RSSWrapper.__init__(self, feed.find("%schannel" % ns), feed.findall("%sitem" % ns), ns)
+		RSSWrapper.__init__(self, feed.find(f"{ns}channel"), feed.findall(f"{ns}item"), ns)
 
 	def __getattr__(self, tag):
 		if tag == 'logo':  # afaik not officially part of older rss, but can't hurt
@@ -1350,8 +1350,8 @@ class RSS2Wrapper(RSSWrapper):
 
 class PEAWrapper(RSSWrapper):
 	def __init__(self, feed, ns):
-		ns = feed.tag[:feed.tag.index("}") + 1]
-		RSSWrapper.__init__(self, feed, feed.findall("%sentry" % ns), ns)
+		_ns = feed.tag[:feed.tag.index("}") + 1]
+		RSSWrapper.__init__(self, feed, feed.findall(f"{_ns}entry"), _ns)
 
 	def __getitem__(self, index):
 		return PEAEntryWrapper(self._items[index], self._ns)
