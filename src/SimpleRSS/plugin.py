@@ -11,11 +11,6 @@ from traceback import print_exc
 from twisted.internet.reactor import callInThread
 from xml.etree.ElementTree import tostring, fromstring
 
-# current feed:
-# self.feed: <<class 'Plugins.Extensions.SimpleRSS.plugin.UniversalFeed'>, "Title", "Description", 5 items>
-# feed collection:
-# self.feeds: [(<Plugins.Extensions.SimpleRSS.plugin.BaseFeed object at 0xa688def0>,), (<Plugins.Extensions.SimpleRSS.plugin.UniversalFeed object at 0xa6890030>,), (<Plugins.Extensions.SimpleRSS.plugin.UniversalFeed object at 0xa68900b0>,), (<Plugins.Extensions.SimpleRSS.plugin.UniversalFeed object at 0xa68900d0>,), (<Plugins.Extensions.SimpleRSS.plugin.UniversalFeed object at 0xa68900f0>,), (<Plugins.Extensions.SimpleRSS.plugin.UniversalFeed object at 0xa6890110>,)]
-
 # ENIGMA IMPORTS
 from enigma import getDesktop, eTimer, eServiceReference, BT_SCALE, BT_KEEP_ASPECT_RATIO, BT_HALIGN_CENTER, BT_VALIGN_CENTER
 from Components.ActionMap import ActionMap
@@ -54,7 +49,7 @@ tickerView = None
 update_callbacks = []
 RESOLUTION = "fHD" if getDesktop(0).size().width() > 1300 else "HD"
 TEMPPATH = join("/tmp/", MODULE_NAME.lower())  # /tmp/simplerss/
-PLUGINPATH = resolveFilename(SCOPE_PLUGINS, "Extensions/%s" % MODULE_NAME)  # /usr/lib/enigma2/python/Plugins/Extensions/SimpleRSS/
+PLUGINPATH = resolveFilename(SCOPE_PLUGINS, f"Extensions/{MODULE_NAME}")  # /usr/lib/enigma2/python/Plugins/Extensions/SimpleRSS/
 NOLOGO = "no_logo.png"
 NOPIC = "no_pic.png"
 NEWSLOGO = "latest_news.png"
@@ -149,7 +144,7 @@ def downloadPicfile(url, picfile, resize=None, fixedname=None, callback=None):
 					img = Image.open(picfile)
 					if resize:
 						img.thumbnail(resize, Image.LANCZOS)  # resize, keeping aspect ratio and antialiasing
-					pngfile = "%s.png" % picfile[:picfile.rfind(".")]
+					pngfile = "{}.png".format(picfile[:picfile.rfind(".")])
 					img.save(pngfile, format="png", lossless=True)  # forced save as PNG because some boxes (e.g. HD51) wrongly display JPGs transparently
 					img.close()
 				except Exception as err:
@@ -167,7 +162,7 @@ def downloadPicfile(url, picfile, resize=None, fixedname=None, callback=None):
 
 def url2filename(url, forcepng=False):
 	url = cleanupUrl(url)
-	return "%s.png" % hash(url) if forcepng else ("%s%s" % (hash(url), url[url.rfind("."):])).replace(".jpeg", ".jpg")
+	return f"{hash(url)}.png" if forcepng else ("{}{}".format(hash(url), url[url.rfind("."):])).replace(".jpeg", ".jpg")
 
 
 def cleanupUrl(url):
@@ -177,7 +172,7 @@ def cleanupUrl(url):
 
 
 def isExtensionSupported(name, supportlist=MIMEIMAGES):
-	return name[name.rfind("."):] in [".%s" % type[type.rfind("/") + 1:] for type in supportlist]  # extension supported?
+	return name[name.rfind("."):] in [".{}".format(type[type.rfind("/") + 1:]) for type in supportlist]  # extension supported?
 
 
 class RSS_TickerView(Screen):
@@ -194,9 +189,9 @@ class RSS_TickerView(Screen):
 	def __init__(self, session):
 		oldpos = search(r'<screen name="(.*?)".*?position="(.*?)"', self.skin)
 		if oldpos:
-			newpos = "%s,%s" % (oldpos.group(2).split(",")[0], int(10.26 * int(config.plugins.simpleRSS.ticker_ypos.value)))
-			self.skin = self.skin.replace('position="%s"' % oldpos. group(2), 'position="%s"' % newpos)
-		newoptions = ["steptime=%d,step=%d" % (config.plugins.simpleRSS.ticker_frequency.value, config.plugins.simpleRSS.ticker_scrollspeed.value)]
+			newpos = "{},{}".format(oldpos.group(2).split(",")[0], int(10.26 * int(config.plugins.simpleRSS.ticker_ypos.value)))
+			self.skin = self.skin.replace(f'position="{oldpos. group(2)}"', f'position="{newpos}"')
+		newoptions = ["steptime={config.plugins.simpleRSS.ticker_frequency.value},step={config.plugins.simpleRSS.ticker_scrollspeed.value}"]
 		options = search(r'options\s*="(.*?)"', self.skin)
 		if options:
 			options = options.group(1)
@@ -211,7 +206,7 @@ class RSS_TickerView(Screen):
 		self["newsLabel"] = StaticText()
 
 	def updateText(self, feed):
-		text = "%s: %s" % (_("New Items"), " +++ ".join((item[0] for item in feed.history)))
+		text = "{}: {}".format(_("New Items"), " +++ ".join(item[0] for item in feed.history))
 		self["newsLabel"].setText(text)
 
 	def display(self, feed=None):
@@ -354,7 +349,7 @@ class RSS_Setup(ConfigListScreen, Screen):  # Setup for SimpleRSS, quick-edit fo
 			self.session.open(RSSFeedEdit, ident)
 
 	def choiceImportSource(self):
-		possible_actions = (("/tmp/feeds.xml", "temp"), ("%s%s" % (PLUGINPATH, "feeds.xml"), "plugin"))
+		possible_actions = (("/tmp/feeds.xml", "temp"), ("{}{}".format(PLUGINPATH, "feeds.xml"), "plugin"))
 		self.session.openWithCallback(self.importFeedlist, ChoiceBox, _("Import feeds from:"), possible_actions)
 
 	def importFeedlist(self, result):
@@ -366,7 +361,7 @@ class RSS_Setup(ConfigListScreen, Screen):  # Setup for SimpleRSS, quick-edit fo
 			dupes = 0
 			try:
 				simpleRSS = config.plugins.simpleRSS
-				with open(feedfile, "r") as f:
+				with open(feedfile) as f:
 					xmlroot = fromstring(f.read())
 					for child in xmlroot:
 						if child.tag == "feed" and child[1].tag == "url":
@@ -386,7 +381,7 @@ class RSS_Setup(ConfigListScreen, Screen):  # Setup for SimpleRSS, quick-edit fo
 					simpleRSS.feed.save()
 			except Exception as err:
 				print(f"[{MODULE_NAME}] ERROR in module 'importFeedlist' - xml-file was corrupt:\n{str(err)}")
-				self.session.open(MessageBox, _("Xml-file '%s' was corrupt:\n%s" % (feedfile, str(err))), type=MessageBox.TYPE_ERROR, timeout=5)
+				self.session.open(MessageBox, _(f"Xml-file '{feedfile}' was corrupt:\n{str(err)}"), type=MessageBox.TYPE_ERROR, timeout=5)
 				return
 			print(f"[{MODULE_NAME}] Importing '{feedfile}': {success} successfully, {dupes} double")
 			self.session.open(MessageBox, _("Importing '%s'\n%s feeds were imported successfully\n%s feeds were double and not imported") % (feedfile, success, dupes), type=MessageBox.TYPE_INFO, timeout=10)
@@ -596,7 +591,7 @@ class RSS_EntryView(RSSBaseView):  # Shows a RSS Item
 		currindex = self["enclist"].getSelectedIndex()
 		if currindex < len(self.enclist):
 			if self.enclist[currindex][1] in MIMEIMAGES:
-				self.filename = join(TEMPPATH, "full_%s" % url2filename(self.enclist[currindex][0]))
+				self.filename = join(TEMPPATH, f"full_{url2filename(self.enclist[currindex][0])}")
 				if exists(self.filename):
 					self.showFullpic()
 				else:
@@ -609,7 +604,7 @@ class RSS_EntryView(RSSBaseView):  # Shows a RSS Item
 				self.session.open(MessageBox, _("Sorry, this attachment cannot be opened: unsupported MIME type"), type=MessageBox.TYPE_ERROR, timeout=5)
 
 	def showFullpic(self):
-		pngfile = join(TEMPPATH, "%s.png" % self.filename[:self.filename.rfind(".")])
+		pngfile = join(TEMPPATH, "{}.png".format(self.filename[:self.filename.rfind(".")]))
 		piclist = []
 		if exists(pngfile):
 			piclist.append(((pngfile, False), None))
@@ -688,7 +683,7 @@ class RSS_FeedView(RSSBaseView):  # Shows a RSS-Feed
 		RSSBaseView.__init__(self, session, rssPoller)
 		self.session = session
 		Screen.__init__(self, session)
-		self.feed = feed
+		self.feed = feed  # current feed
 		self.newItems = newItems
 		self.parent = parent  # restore, because 'Screen.__init' will set self.parent = 'Screen of Skin'
 		self.ident = ident
@@ -783,7 +778,7 @@ class RSS_FeedView(RSSBaseView):  # Shows a RSS-Feed
 					for enclosure in RSSBaseView.findEnclosure(self, content[3]):
 						picfile = join(TEMPPATH, url2filename(enclosure[0]))
 						if pngfile == self.nopic and isExtensionSupported(picfile):  # catch first supported picture-url in list of attachments
-							pngfile = "%s.png" % picfile[:picfile.rfind(".")]
+							pngfile = "{}.png".format(picfile[:picfile.rfind(".")])
 							if not exists(pngfile):
 								callInThread(downloadPicfile, enclosure[0], picfile, resize=self.picsize, callback=self.refreshPics)
 								pngfile = self.nopic
@@ -966,11 +961,11 @@ class RSS_Overview(RSSBaseView):  # Shows an Overview over all RSS-Feeds known t
 		self.close()
 
 	def fillFeeds(self):  # Feedlist contains our virtual Feed and all real ones
-		self.feeds = [(self.rssPoller.newItemFeed,)]
+		self.feeds = [(self.rssPoller.newItemFeed,)]  # feed collection
 		self.feeds.extend([(feed,) for feed in self.rssPoller.feeds])
 
 	def pollCallback(self, ident=None):
-		print("[%s] SimpleRSS called back" % MODULE_NAME)
+		print(f"[{MODULE_NAME}] SimpleRSS called back")
 		self.fillFeeds()
 		self.buildSkinList()
 		self.updateInfo()
@@ -992,7 +987,7 @@ class RSS_Overview(RSSBaseView):  # Shows an Overview over all RSS-Feeds known t
 			logourl = feed[0].logoUrl
 			if logourl:
 				logofile = join(TEMPPATH, url2filename(logourl))
-				logopng = "%s.png" % logofile[:logofile.rfind(".")]
+				logopng = "{}.png".format(logofile[:logofile.rfind(".")])
 				if not exists(logopng):
 					callInThread(downloadPicfile, logourl, logofile, resize=self.logosize, callback=self.refreshPics)
 			else:
@@ -1147,7 +1142,7 @@ class RSSPoller:  # Keeps all Feed and takes care of (automatic) updates
 
 	def poll(self):
 		if self.reloading:  # Reloading, reschedule
-			print("[%s] timer triggered while reloading, rescheduling" % MODULE_NAME)
+			print(f"[{MODULE_NAME}] timer triggered while reloading, rescheduling")
 		elif len(self.feeds) <= self.current_feed:  # End of List
 			if self.newItemFeed.history:  # New Items
 				print(f"[{MODULE_NAME}] got new items, calling back")
@@ -1199,7 +1194,7 @@ class RSSPoller:  # Keeps all Feed and takes care of (automatic) updates
 			if feed.autoupdate:
 				callInThread(self.pollXml, feed.uri, self.error)
 			else:  # Go to next feed
-				print("[%s] passing feed sucessfully" % MODULE_NAME)
+				print(f"[{MODULE_NAME}] passing feed sucessfully")
 				self.next_feed()
 
 	def next_feed(self):
@@ -1373,7 +1368,7 @@ class BaseFeed:  # Base-class for all Feeds. Initializes needed Elements.
 		self.history = []
 
 	def __str__(self):
-		return "<%s, \"%s\", \"%s\", %d items>" % (self.__class__, self.title, self.description, len(self.history))
+		return "<{self.__class__}, \"{self.title}\", \"{self.description}\", {self.history} items>"
 
 
 class UniversalFeed(BaseFeed):  # Feed which can handle rdf, rss and atom feeds utilizing abstraction wrappers.
@@ -1425,7 +1420,7 @@ class UniversalFeed(BaseFeed):  # Feed which can handle rdf, rss and atom feeds 
 			elif feed.tag.endswith("feed"):
 				self.wrapper = PEAWrapper
 			else:
-				raise NotImplementedError('Unsupported Feed: %s' % feed.tag)
+				raise NotImplementedError(f'Unsupported Feed: {feed.tag}')
 			wrapper = self.wrapper(feed, self.ns)
 			title = strip(wrapper.title) or ""
 			self.title = title[title.find("-") + 1:].strip()  # remove leading "-"
