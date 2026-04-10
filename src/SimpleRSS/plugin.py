@@ -47,6 +47,7 @@ except ImportError:
 rssPoller = None
 tickerView = None
 update_callbacks = []
+HTTPS = "https://"
 RESOLUTION = "fHD" if getDesktop(0).size().width() > 1300 else "HD"
 TEMPPATH = join("/tmp/", MODULE_NAME.lower())  # /tmp/simplerss/
 PLUGINPATH = resolveFilename(SCOPE_PLUGINS, f"Extensions/{MODULE_NAME}")  # /usr/lib/enigma2/python/Plugins/Extensions/SimpleRSS/
@@ -54,9 +55,9 @@ NOLOGO = "no_logo.png"
 NOPIC = "no_pic.png"
 NEWSLOGO = "latest_news.png"
 NOTIFICATIONID = 'SimpleRSSUpdateNotification'
-NS_RDF = "{http://www.w3.org/1999/02/22-rdf-syntax-ns#}"
-NS_RSS_09 = "{http://my.netscape.com/rdf/simple/0.9/}"
-NS_RSS_10 = "{http://purl.org/rss/1.0/}"
+NS_RDF = "{https://www.w3.org/1999/02/22-rdf-syntax-ns#}"
+NS_RSS_09 = "{https://my.netscape.com/rdf/simple/0.9/}"
+NS_RSS_10 = "{https://purl.org/rss/1.0/}"
 MIMEIMAGES = ["image/jpg", "image/jpeg", "image/png", "image/gif", "image/webp"]
 MIMEVIDEOS = ["video/mp4"]
 MIMEAUDIOS = ["audio/mpeg"]
@@ -76,7 +77,7 @@ simpleRSS.feed = ConfigSubList()
 i = 0
 while i < simpleRSS.feedcount.value:
 	s = ConfigSubsection()
-	s.uri = ConfigText(default="http://", fixed_size=False)
+	s.uri = ConfigText(default=HTTPS, fixed_size=False)
 	s.autoupdate = ConfigEnableDisable(default=True)
 	simpleRSS.feed.append(s)
 	i += 1
@@ -393,7 +394,7 @@ class RSS_Setup(ConfigListScreen, Screen):  # Setup for SimpleRSS, quick-edit fo
 	def addEntry(self):  # create entry
 		feed = config.plugins.simpleRSS.feed
 		s = ConfigSubsection()
-		s.uri = ConfigText(default="http://", fixed_size=False)
+		s.uri = ConfigText(default=HTTPS, fixed_size=False)
 		s.autoupdate = ConfigEnableDisable(default=True)
 		ident = len(feed)
 		feed.append(s)
@@ -405,7 +406,7 @@ class RSS_Setup(ConfigListScreen, Screen):  # Setup for SimpleRSS, quick-edit fo
 	def conditionalNew(self):
 		ident = len(config.plugins.simpleRSS.feed) - 1
 		uri = config.plugins.simpleRSS.feed[ident].uri
-		if uri.value == "http://":  # Check if new feed differs from default
+		if uri.value == HTTPS:  # Check if new feed differs from default
 			del config.plugins.simpleRSS.feed[ident]
 		else:
 			config.plugins.simpleRSS.feedcount.value = ident + 1
@@ -1228,7 +1229,7 @@ class RSSPoller:  # Keeps all Feed and takes care of (automatic) updates
 		self.poll
 
 
-class ElementWrapper:  # based on http://effbot.org/zone/element-rss-wrapper.htm
+class ElementWrapper:  # based on https://effbot.org/zone/element-rss-wrapper.htm
 	def __init__(self, element, ns=""):
 		self._element = element
 		self._ns = ns
@@ -1254,15 +1255,15 @@ class RSSEntryWrapper(ElementWrapper):
 				if elem.text:
 					res = search(r'src="(.*?)"', elem.text)  # search for 'src=', perhaps not the most elegant way but it works
 					if res:
-						url = res.group(1).replace("http://", "https://")
+						url = res.group(1).replace(HTTPS, "https://")
 						myl.append((url, EXT2MIME.get(cleanupUrl(url[url.rfind("."):]), "unknown"), "0"))  # create missing MIME type
 					else:  # alternative #2: search for enclosures. HINT: tag '<content:encoded>' can't be found by self._element.findall()
 						res = search(r'src="(.*?)"', tostring(self._element).decode())  # quick'n'dirty but it works
 						if res:
-							url = res.group(1).replace("http://", "https://")
+							url = res.group(1).replace(HTTPS, "https://")
 							myl.append((url, EXT2MIME.get(cleanupUrl(url[url.rfind("."):]), "unknown"), "0"))
 			for elem in self._element.findall(f"{self._ns}image"):  # alternative #3: search for enclosures
-				url = elem.text.replace("http://", "https://")
+				url = elem.text.replace(HTTPS, "https://")
 				myl.append((url, EXT2MIME.get(cleanupUrl(url[url.rfind("."):]), "unknown"), "0"))  # create missing MIME type
 			return myl
 
