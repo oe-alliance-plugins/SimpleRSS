@@ -6,7 +6,7 @@ PluginLanguageDomain = "SimpleRSS"
 PluginLanguagePath = "Extensions/SimpleRSS/locale"
 
 
-def locale_init():
+def localeInit():
 	bindtextdomain(PluginLanguageDomain, resolveFilename(SCOPE_PLUGINS, PluginLanguagePath))
 
 
@@ -18,7 +18,7 @@ def _(txt):
 		return gettext(txt)
 
 
-locale_init()
-language.addCallback(locale_init)
+localeInit()
+language.addCallback(localeInit)
 
 __version__ = "1.1"
