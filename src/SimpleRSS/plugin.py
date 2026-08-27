@@ -145,7 +145,7 @@ def downloadPicfile(url, picfile, resize=None, fixedname=None, callback=None):
 				try:  # in case PIL cannot handle picture format
 					img = Image.open(picfile)
 					if resize:
-						img.thumbnail(resize, Image.LANCZOS)  # resize, keeping aspect ratio and antialiasing
+						img.thumbnail(resize, Image.Resampling.LANCZOS)  # resize, keeping aspect ratio and antialiasing
 					pngfile = "{}.png".format(picfile[:picfile.rfind(".")])
 					img.save(pngfile, format="png", lossless=True)  # forced save as PNG because some boxes (e.g. HD51) wrongly display JPGs transparently
 					img.close()
