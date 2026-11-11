@@ -1,0 +1,16 @@
+<setupxml>
+	<setup key="RSSsetup" title="Simple RSS Reader Setup">
+		<item level="0" text="--- Allgemeine Einstellungen ------------------------------------------------" />
+		<item level="0" text="Automatisch mit Enigma2 starten:" description="SimpleRSS beim Start der Benutzeroberfläche automatisch starten.">config.plugins.simpleRSS.autostart</item>
+		<if conditional="not config.plugins.simpleRSS.autostart.value">
+			<item level="0" text="Im Hintergrund weiterlaufen:" description="SimpleRSS nach dem Schließen des Fensters weiterlaufen lassen.">config.plugins.simpleRSS.keep_running</item>
+		</if>
+		<item level="0" text="Aktualisierungsintervall [Minuten]:" description="Zeit zwischen automatischen Feed-Aktualisierungen.">config.plugins.simpleRSS.interval</item>
+		<item level="0" text="Neue Nachrichten anzeigen als:" description="Darstellungsart für neu eingegangene RSS-Artikel.">config.plugins.simpleRSS.update_notification</item>
+		<if conditional="config.plugins.simpleRSS.update_notification.value == 'ticker'">
+			<item level="0" text="Tickerposition [%]:" description="Vertikale Position des Newstickers; 0 steht für oben, 100 für unten." restart="gui">config.plugins.simpleRSS.ticker_ypos</item>
+			<item level="0" text="Ticker-Schrittintervall [ms]:" description="Zeit zwischen den Scrollschritten. Niedrigere Werte können die Box stärker belasten." restart="gui">config.plugins.simpleRSS.ticker_frequency</item>
+			<item level="0" text="Ticker-Schrittweite [Pixel]:" description="Pixelzahl pro Scrollschritt. Hohe Werte können ruckeln." restart="gui">config.plugins.simpleRSS.ticker_scrollspeed</item>
+		</if>
+	</setup>
+</setupxml>

@@ -8,12 +8,12 @@ from re import search
 from requests import get, exceptions
 from shutil import copy, rmtree
 from traceback import print_exc
-from twisted.internet.reactor import callInThread
+from twisted.internet.reactor import callFromThread, callInThread
 from xml.etree.ElementTree import tostring, fromstring
 
 # ENIGMA IMPORTS
 from enigma import getDesktop, eTimer, eServiceReference, BT_SCALE, BT_KEEP_ASPECT_RATIO, BT_HALIGN_CENTER, BT_VALIGN_CENTER
-from Components.ActionMap import ActionMap
+from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.config import config, getConfigListEntry, ConfigSubsection, ConfigSubList, ConfigEnableDisable, ConfigNumber, ConfigSelectionNumber, ConfigText, ConfigSelection
 from Components.ConfigList import ConfigListScreen
 from Components.Pixmap import Pixmap
@@ -27,6 +27,7 @@ from Screens.ChoiceBox import ChoiceBox
 from Screens.InfoBar import MoviePlayer
 from Screens.MessageBox import MessageBox
 from Screens.Screen import Screen
+from Screens.Setup import Setup
 from Tools import Notifications
 from Tools.Directories import resolveFilename, SCOPE_PLUGINS
 from Tools.LoadPixmap import LoadPixmap
@@ -87,16 +88,20 @@ del simpleRSS, i
 
 
 def main(session, **kwargs):  # Main Function
-	global rssPoller  # Get Global rssPoller-Object
+	global rssPoller, tickerView  # Get Global Objects
 	if exists(TEMPPATH):
 		rmtree(TEMPPATH)
 	if not exists(TEMPPATH):
 		mkdir(TEMPPATH)
+	if config.plugins.simpleRSS.update_notification.value == "ticker" and tickerView is None:
+		tickerView = session.instantiateDialog(RSS_TickerView)
 	for file in [NEWSLOGO, NOLOGO, NOPIC]:
 		if exists(join(PLUGINPATH, "icons/", file)):
 			copy(join(PLUGINPATH, "icons/", file), join(TEMPPATH, file))
 	if rssPoller is None:  # Create one if we have none (no autostart)
-		rssPoller = RSSPoller()
+		rssPoller = RSSPoller(session=session)
+	else:
+		rssPoller.session = session
 	if rssPoller.feeds:  # Show Overview when we have feeds
 		session.openWithCallback(closed, RSS_Overview, rssPoller)
 	else:  # Show Setup otherwise
@@ -114,12 +119,14 @@ def closed():  # If SimpleRSS should not run in Background: shutdown
 def autostart(reason, **kwargs):  # Autostart
 	global rssPoller, tickerView
 	if "session" in kwargs:
+		if rssPoller:
+			rssPoller.session = kwargs["session"]
 		if config.plugins.simpleRSS.update_notification.value == "ticker" and tickerView is None:
 			print(f"[{MODULE_NAME}] Ticker instantiated on autostart")
 			tickerView = kwargs["session"].instantiateDialog(RSS_TickerView)
 	# Instanciate when enigma2 is launching, autostart active and session present or installed during runtime
 	if reason == 0 and config.plugins.simpleRSS.autostart.value and (not plugins.firstRun or "session" in kwargs):
-		rssPoller = RSSPoller()
+		rssPoller = RSSPoller(session=kwargs.get("session"))
 	elif reason == 1 and rssPoller:
 		rssPoller.shutdown()
 		rssPoller = None
@@ -193,12 +200,15 @@ class RSS_TickerView(Screen):
 		if oldpos:
 			newpos = "{},{}".format(oldpos.group(2).split(",")[0], int(10.26 * int(config.plugins.simpleRSS.ticker_ypos.value)))
 			self.skin = self.skin.replace(f'position="{oldpos. group(2)}"', f'position="{newpos}"')
-		newoptions = ["steptime={config.plugins.simpleRSS.ticker_frequency.value},step={config.plugins.simpleRSS.ticker_scrollspeed.value}"]
+		newoptions = [
+			f"steptime={config.plugins.simpleRSS.ticker_frequency.value}",
+			f"step={config.plugins.simpleRSS.ticker_scrollspeed.value}",
+		]
 		options = search(r'options\s*="(.*?)"', self.skin)
 		if options:
 			options = options.group(1)
 			for option in options.split(","):
-				if "step" not in option:  # remove entries 'steptime=' and 'step='…
+				if not option.startswith(("steptime=", "step=")):
 					newoptions.append(option)
 			newoptions = ",".join(newoptions)
 			self.skin = self.skin.replace(options, newoptions)  # …and add/replace it with own entries
@@ -239,50 +249,49 @@ class RSSFeedEdit(ConfigListScreen, Screen):  # Edit an RSS-Feed
 		self.close()
 
 
-class RSS_Setup(ConfigListScreen, Screen):  # Setup for SimpleRSS, quick-edit for Feed-URIs and settings present.
-	skin = """
-	<screen name="RSS_Setup" position="0,0" size="1920,1080" resolution="1920,1080" title="Simple RSS Reader Setup" flags="wfNoBorder" backgroundColor="transparent">
-		<eLabel name="line" position="60,37" zPosition="-10" size="1800,975" backgroundColor="#1A0F0F0F" />
-		<eLabel name="line" position="60,132" size="1800,1" backgroundColor="#00FFFFFF" zPosition="0" />
-		<widget source="global.CurrentTime" render="Label" position="1640,45" size="210,90" font="Regular;75" noWrap="1" halign="center" valign="bottom" foregroundColor="#00FFFFFF" backgroundColor="#1A0F0F0F" transparent="1">
-			<convert type="ClockToText">Default</convert>
-		</widget>
-		<widget source="global.CurrentTime" render="Label" position="1400,45" size="240,40" font="Regular;24" noWrap="1" halign="right" valign="bottom" foregroundColor="#00FFFFFF" backgroundColor="#1A0F0F0F" transparent="1">
-			<convert type="ClockToText">Format:%A</convert>
-		</widget>
-		<widget source="global.CurrentTime" render="Label" position="1400,81" size="240,40" font="Regular;24" noWrap="1" halign="right" valign="bottom" foregroundColor="#00FFFFFF" backgroundColor="#1A0F0F0F" transparent="1">
-			<convert type="ClockToText">Format:%e. %B</convert>
-		</widget>
-		<widget source="title" render="Label" position="87,54" size="787,75" valign="bottom" font="Regular;51" noWrap="1" foregroundColor="#00b3b3b3" backgroundColor="#1A0F0F0F" transparent="1" />
-		<widget name="config" position="105,180" size="1050,765" font="Regular;30" itemHeight="45" scrollbarMode="showOnDemand" transparent="1" />
-		<ePixmap position="1335,262" size="384,384" zPosition="2" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SimpleRSS/icons/rss_fHD.png" transparent="1" alphatest="blend" />
-		<eLabel text="Import" position="1570,949" size="270,57" zPosition="1" valign="center" font="Regular;30" halign="left" foregroundColor="#00b3b3b3" backgroundColor="#1A0F0F0F" transparent="1" />
-		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SimpleRSS/icons/key_red_fHD.png" position="105,949" size="39,57" alphatest="blend" />
-		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SimpleRSS/icons/key_green_fHD.png" position="450,949" size="39,57" alphatest="blend" />
-		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SimpleRSS/icons/key_yellow_fHD.png" position="795,949" size="39,57" alphatest="blend" />
-		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SimpleRSS/icons/key_blue_fHD.png" position="1140,949" size="39,57" alphatest="blend" />
-		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SimpleRSS/icons/key_menu_fHD.png" position="1485,949" size="80,57" alphatest="blend" />
-		<widget source="key_red" render="Label" position="140,949" size="270,57" zPosition="1" valign="center" font="Regular;30" halign="left" foregroundColor="#00b3b3b3" backgroundColor="#1A0F0F0F" transparent="1" />
-		<widget source="key_green" render="Label" position="485,949" size="270,57" zPosition="1" valign="center" font="Regular;30" halign="left" foregroundColor="#00b3b3b3" backgroundColor="#1A0F0F0F" transparent="1" />
-		<widget source="key_yellow" render="Label" position="830,949" size="270,57" zPosition="1" valign="center" font="Regular;30" halign="left" foregroundColor="#00b3b3b3" backgroundColor="#1A0F0F0F" transparent="1" />
-		<widget source="key_blue" render="Label" position="1175,949" size="270,57" zPosition="1" valign="center" font="Regular;30" halign="left" foregroundColor="#00b3b3b3" backgroundColor="#1A0F0F0F" transparent="1" />
-		<eLabel text="Autoren: moritz.venn@freaque.net, Mr.Servo, Skinned by stein17" position="1260,780" size="534,75" zPosition="1" valign="center" font="Regular;30" halign="center" foregroundColor="#00666666" backgroundColor="#1A0F0F0F" transparent="1" />
-	</screen>"""
-
+class RSS_Setup(Setup):
 	def __init__(self, session, rssPoller=None):
-		self.session = session
-		if RESOLUTION == "HD":
-			self.skin = self.skin.replace("_fHD.png", "_HD.png")
-		Screen.__init__(self, session)
 		self.rssPoller = rssPoller
-		config.plugins.simpleRSS.autostart.addNotifier(self.elementChanged, initial_call=False)
+		Setup.__init__(self, session, "RSSsetup", plugin="Extensions/SimpleRSS", PluginLanguageDomain=MODULE_NAME)
+		self["key_blue"] = StaticText(_("Feeds"))
+		self["entryActions"] = HelpableActionMap(self, ["ColorActions"], {
+			"blue": (self.openFeedSetup, _("Manage RSS feeds"))
+		}, prio=0, description=MODULE_NAME)
+		self.addSaveNotifier(self.saveSettings)
+
+	def openFeedSetup(self):
+		self.session.openWithCallback(self.feedSetupClosed, RSS_FeedSetup)
+
+	def feedSetupClosed(self, result=None):
+		if self.rssPoller:
+			self.rssPoller.triggerReload()
+
+	def saveSettings(self):
+		self.notificationChanged(config.plugins.simpleRSS.update_notification)
+		if self.rssPoller:
+			self.rssPoller.triggerReload()
+
+	def notificationChanged(self, instance):
+		global tickerView
+		if instance.value == "ticker":
+			if tickerView is None:
+				tickerView = self.session.instantiateDialog(RSS_TickerView)
+		elif tickerView:
+			self.session.deleteDialog(tickerView)
+			tickerView = None
+
+
+class RSS_FeedSetup(ConfigListScreen, Screen):
+	def __init__(self, session):
+		self.session = session
+		Screen.__init__(self, session)
+		self.skinName = ["Setup"]
 		ConfigListScreen.__init__(self, self.getSetupList(), on_change=self.elementChanged)
-		self["title"] = StaticText(_("Simple RSS Reader Setup"))
+		self["title"] = StaticText(_("RSS Feeds"))
 		self["key_red"] = StaticText(_("Cancel"))
 		self["key_green"] = StaticText(_("Save"))
 		self["key_yellow"] = StaticText(_("New"))
 		self["key_blue"] = StaticText(_("Delete"))
-		self["content"] = List([])
 		self["setupActions"] = ActionMap(["ColorActions",
 											"SetupActions",
 											"OkCancelActions",
@@ -298,40 +307,13 @@ class RSS_Setup(ConfigListScreen, Screen):  # Setup for SimpleRSS, quick-edit fo
 		self.onLayoutFinish.append(self.setCustomTitle)
 
 	def setCustomTitle(self):
-		self.setTitle(_("Simple RSS Reader Setup"))
+		self.setTitle(_("RSS Feeds"))
 
 	def getSetupList(self):
-		simpleRSS = config.plugins.simpleRSS
-		clist = [getConfigListEntry(_("Feed"), x.uri) for x in simpleRSS.feed]  # Create List of all Feeds
-		clist.append(getConfigListEntry(_("Start automatically with Enigma2"), simpleRSS.autostart))
-		self.keep_running = getConfigListEntry(_("Keep running in background"), simpleRSS.keep_running)  # Save keep_running in instance as we want to dynamically add/remove it
-		if not simpleRSS.autostart.value:
-			clist.append(self.keep_running)
-		clist.append(getConfigListEntry(_("Update Interval [min]"), simpleRSS.interval))
-		clist.append(getConfigListEntry(_("Show new Messages as"), simpleRSS.update_notification))
-		if simpleRSS.update_notification.value == "ticker":
-			clist.append(getConfigListEntry(_(" *Vertical position of ticker [%] (0% = top / 100% = bottom)"), simpleRSS.ticker_ypos))
-			clist.append(getConfigListEntry(_(" *Frequency of scrollsteps [ms] (low values slow down the box)"), simpleRSS.ticker_frequency))
-			clist.append(getConfigListEntry(_(" *Scrollspeed [pixels per step] (high values lead to jerking)"), simpleRSS.ticker_scrollspeed))
-			clist.append(("",))
-			clist.append((_(" *=please perform a GUI-restart for these changes to take effect"),))
-		clist.append(("-" * 120,))
-		clist.append((_("Note: If box becomes extremely slow, please reduce the quantity of feeds."),))
-		return clist
+		return [getConfigListEntry(_("Feed"), feed.uri) for feed in config.plugins.simpleRSS.feed]
 
 	def elementChanged(self, instance=None):
 		self["config"].setList(self.getSetupList())
-
-	def notificationChanged(self, instance):
-		global tickerView
-		if instance and instance.value == "ticker":
-			if tickerView is None:
-				print(f"[{MODULE_NAME}] Ticker instantiated on startup")
-				tickerView = self.session.instantiateDialog(RSS_TickerView)
-		else:
-			if tickerView:
-				self.session.deleteDialog(tickerView)
-				tickerView = None
 
 	def delete(self):
 		if config.plugins.simpleRSS.feed:
@@ -341,8 +323,9 @@ class RSS_Setup(ConfigListScreen, Screen):  # Setup for SimpleRSS, quick-edit fo
 		if result:
 			ident = self["config"].getCurrentIndex()
 			del config.plugins.simpleRSS.feed[ident]
-			config.plugins.simpleRSS.feedcount.value -= 1
+			config.plugins.simpleRSS.feedcount.value = len(config.plugins.simpleRSS.feed)
 			config.plugins.simpleRSS.feedcount.save()
+			config.plugins.simpleRSS.feed.save()
 			self["config"].setList(self.getSetupList())
 
 	def ok(self):
@@ -357,40 +340,41 @@ class RSS_Setup(ConfigListScreen, Screen):  # Setup for SimpleRSS, quick-edit fo
 	def importFeedlist(self, result):
 		if not result:
 			return
-		feedfile = join(result[0])
-		if exists(feedfile):
-			success = 0
-			dupes = 0
-			try:
-				simpleRSS = config.plugins.simpleRSS
-				with open(feedfile) as f:
-					xmlroot = fromstring(f.read())
-					for child in xmlroot:
-						if child.tag == "feed" and child[1].tag == "url":
-							uri = child[1].text
-							if uri in [x.uri.value for x in config.plugins.simpleRSS.feed]:
-								print(f"[{MODULE_NAME}] Found double feed: '{uri}'")
-								dupes += 1
-							else:
-								ident = self.addEntry()
-								print(f"[{MODULE_NAME}] Feed was imported: '{uri}'")
-								simpleRSS.feed[ident].uri.value = uri
-								simpleRSS.feed[ident].save()
-								simpleRSS.feedcount.value += 1
-								success += 1
-				if success:
-					simpleRSS.feedcount.save()
-					simpleRSS.feed.save()
-			except Exception as err:
-				print(f"[{MODULE_NAME}] ERROR in module 'importFeedlist' - xml-file was corrupt:\n{str(err)}")
-				self.session.open(MessageBox, _(f"Xml-file '{feedfile}' was corrupt:\n{str(err)}"), type=MessageBox.TYPE_ERROR, timeout=5)
-				return
-			print(f"[{MODULE_NAME}] Importing '{feedfile}': {success} successfully, {dupes} double")
-			self.session.open(MessageBox, _("Importing '%s'\n%s feeds were imported successfully\n%s feeds were double and not imported") % (feedfile, success, dupes), type=MessageBox.TYPE_INFO, timeout=10)
-			self.elementChanged(None)
-		else:
+		feedfile = result[0]
+		if not exists(feedfile):
 			print(f"[{MODULE_NAME}] File '{feedfile}' was not found, import was aborted!")
 			self.session.open(MessageBox, _("File '%s' was not found, import was aborted!") % feedfile, type=MessageBox.TYPE_ERROR, timeout=5)
+			return
+		success = 0
+		dupes = 0
+		try:
+			simpleRSS = config.plugins.simpleRSS
+			with open(feedfile) as source:
+				xmlroot = fromstring(source.read())
+				for child in xmlroot:
+					if child.tag != "feed" or len(child) < 2 or child[1].tag != "url" or not child[1].text:
+						continue
+					uri = child[1].text
+					if uri in [feed.uri.value for feed in simpleRSS.feed]:
+						print(f"[{MODULE_NAME}] Found double feed: '{uri}'")
+						dupes += 1
+						continue
+				ident = self.addEntry()
+				print(f"[{MODULE_NAME}] Feed was imported: '{uri}'")
+				simpleRSS.feed[ident].uri.value = uri
+				simpleRSS.feed[ident].save()
+				success += 1
+			if success:
+				simpleRSS.feedcount.value = len(simpleRSS.feed)
+				simpleRSS.feedcount.save()
+				simpleRSS.feed.save()
+		except Exception as err:
+			print(f"[{MODULE_NAME}] ERROR in module 'importFeedlist' - xml-file was corrupt:\n{str(err)}")
+			self.session.open(MessageBox, _(f"Xml-file '{feedfile}' was corrupt:\n{str(err)}"), type=MessageBox.TYPE_ERROR, timeout=5)
+			return
+		print(f"[{MODULE_NAME}] Importing '{feedfile}': {success} successfully, {dupes} double")
+		self.session.open(MessageBox, _("Importing '%s'\n%s feeds were imported successfully\n%s feeds were double and not imported") % (feedfile, success, dupes), type=MessageBox.TYPE_INFO, timeout=10)
+		self.elementChanged(None)
 
 	def addEntry(self):  # create entry
 		feed = config.plugins.simpleRSS.feed
@@ -405,36 +389,25 @@ class RSS_Setup(ConfigListScreen, Screen):  # Setup for SimpleRSS, quick-edit fo
 		self.session.openWithCallback(self.conditionalNew, RSSFeedEdit, self.addEntry())  # use default
 
 	def conditionalNew(self):
-		ident = len(config.plugins.simpleRSS.feed) - 1
-		uri = config.plugins.simpleRSS.feed[ident].uri
+		feed = config.plugins.simpleRSS.feed
+		ident = len(feed) - 1
+		uri = feed[ident].uri
 		if uri.value == HTTP:  # Check if new feed differs from default
-			del config.plugins.simpleRSS.feed[ident]
-		else:
-			config.plugins.simpleRSS.feedcount.value = ident + 1
-			self["config"].setList(self.getSetupList())
+			del feed[ident]
+		config.plugins.simpleRSS.feedcount.value = len(feed)
+		config.plugins.simpleRSS.feedcount.save()
+		feed.save()
+		self["config"].setList(self.getSetupList())
 
 	def keySave(self):  # Tell Poller to recreate List if present
-		if self.rssPoller:
-			self.rssPoller.triggerReload()
+		config.plugins.simpleRSS.feedcount.value = len(config.plugins.simpleRSS.feed)
+		config.plugins.simpleRSS.feedcount.save()
+		config.plugins.simpleRSS.feed.save()
 		ConfigListScreen.keySave(self)
 		self.close()
 
-	def returnPolling(self):
-		self.close()
-
-	def errorPolling(self, errmsg=""):  # An error occured while polling
-		self.session.open(MessageBox, _("Error while parsing Feed, this usually means there is something wrong with it."), type=MessageBox.TYPE_ERROR, timeout=3)
-		if self.pollDialog:  # Don't show "we're updating"-dialog any longer
-			self.pollDialog.close()
-			self.pollDialog = None
-
 	def keyCancel(self):
-		simpleRSS = config.plugins.simpleRSS
-		simpleRSS.autostart.removeNotifier(self.elementChanged)  # Remove Notifier
-		self.notificationChanged(simpleRSS.update_notification)  # Handle ticker
-		simpleRSS.feedcount.value = len(simpleRSS.feed)  # Keep feedcount sane
-		simpleRSS.feedcount.save()
-		self.close()
+		ConfigListScreen.keyCancel(self)
 
 
 class RSS_Summary(Screen):
@@ -953,11 +926,7 @@ class RSS_Overview(RSSBaseView):  # Shows an Overview over all RSS-Feeds known t
 		self.setTitle(_("Simple RSS Reader"))
 
 	def __close(self):
-		global tickerView
 		self.rssPoller.removeCallback(self.pollCallback)
-		if tickerView:
-			self.session.deleteDialog(tickerView)
-			tickerView = None
 		if exists(TEMPPATH):
 			rmtree(TEMPPATH)
 		self.close()
@@ -1058,7 +1027,8 @@ class RSS_Overview(RSSBaseView):  # Shows an Overview over all RSS-Feeds known t
 
 
 class RSSPoller:  # Keeps all Feed and takes care of (automatic) updates
-	def __init__(self, poll=True):
+	def __init__(self, poll=True, session=None):
+		self.session = session
 		self.poll_timer = eTimer()  # Timer
 		self.poll_timer.callback.append(self.poll)
 		self.do_poll = poll
@@ -1079,7 +1049,7 @@ class RSSPoller:  # Keeps all Feed and takes care of (automatic) updates
 
 	def doCallback(self, ident=None):
 		for callback in update_callbacks:
-			callback(id)
+			callback(ident)
 
 	def error(self, error=""):
 		print(f"[{MODULE_NAME}] failed to fetch feed: {str(error)}")
@@ -1114,21 +1084,20 @@ class RSSPoller:  # Keeps all Feed and takes care of (automatic) updates
 				response.raise_for_status()
 				xmldata = response.content
 				response.close()
-				try:
-					if xmldata:
-						self.gotPage(xmldata)
-					else:
-						print(f"[{MODULE_NAME}] ERROR in module 'pollXml': server access failed, no xml-data found.")
-				except Exception as err:
-					print(f"[{MODULE_NAME}] ERROR in module 'pollXml': invalid xml data from server. {str(err)}")
+				if xmldata:
+					callFromThread(self._gotPage, errorback=errorback, data=xmldata)
+				else:
+					print(f"[{MODULE_NAME}] ERROR in module 'pollXml': server access failed, no xml-data found.")
 					if errorback:
-						errorback(str(err))
+						callFromThread(errorback, "No XML data received")
 			except exceptions.RequestException as err:
 				print(f"[{MODULE_NAME}] ERROR in module 'pollXml': '{str(err)}'")
 				if errorback:
-					errorback(str(err))
+					callFromThread(errorback, str(err))
 		else:
 			print(f"[{MODULE_NAME}] ERROR in module 'pollXml': missing link.")
+			if errorback:
+				callFromThread(errorback, "Missing feed URL")
 
 	def gotPage(self, data, ident=None):
 		feed = fromstring(data.decode())
@@ -1150,11 +1119,19 @@ class RSSPoller:  # Keeps all Feed and takes care of (automatic) updates
 				print(f"[{MODULE_NAME}] got new items, calling back")
 				self.doCallback()
 				update_notification_value = config.plugins.simpleRSS.update_notification.value  # Inform User
+				activeView = self.session and isinstance(getattr(self.session, "current_dialog", None), RSSBaseView)
 				if update_notification_value == "preview":
 					RemovePopup(NOTIFICATIONID)
-					AddNotificationWithID(NOTIFICATIONID, RSS_FeedView, feed=self.newItemFeed, newItems=True)
+					if activeView:
+						self.session.open(RSS_FeedView, feed=self.newItemFeed, newItems=True)
+					else:
+						AddNotificationWithID(NOTIFICATIONID, RSS_FeedView, feed=self.newItemFeed, newItems=True)
 				elif update_notification_value == "notification":
-					AddPopup(_("Received %d new news item(s).") % (len(self.newItemFeed.history)), NOTIFICATIONID, type=MessageBox.TYPE_INFO, timeout=5)
+					message = _("Received %d new news item(s).") % len(self.newItemFeed.history)
+					if activeView:
+						self.session.open(MessageBox, message, type=MessageBox.TYPE_INFO, timeout=5)
+					else:
+						AddPopup(message, type=MessageBox.TYPE_INFO, timeout=5, id=NOTIFICATIONID)
 				elif update_notification_value == "ticker":
 					if tickerView:
 						tickerView.display(self.newItemFeed)
@@ -1168,7 +1145,7 @@ class RSSPoller:  # Keeps all Feed and takes care of (automatic) updates
 		else:  # It's updating-time
 			clearHistory = self.current_feed == 0  # Assume we're cleaning history if current feed is 0
 			if config.plugins.simpleRSS.update_notification.value != "none":
-				if hasattr(Notifications.notifications, 'Notifications.notificationQueue'):
+				if hasattr(Notifications, "notificationQueue"):
 					Xnotifications = Notifications.notificationQueue.queue
 					Xcurrent_notifications = Notifications.notificationQueue.current
 
